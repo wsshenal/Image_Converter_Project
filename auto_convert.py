@@ -1,11 +1,14 @@
 from PIL import Image, ImageDraw, ImageOps
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import os, time, threading, shutil
+import os, sys, time, threading, shutil
+
+# --- Portable base directory (works when bundled by PyInstaller) ---
+BASE_DIR = os.path.dirname(os.path.abspath(getattr(sys, "_MEIPASS", __file__)))
 
 # --- Settings (same look as before) ---
-INPUT_DIR   = "input_images"
-OUTPUT_DIR  = "output_images"
+INPUT_DIR   = os.path.join(BASE_DIR, "input_images")
+OUTPUT_DIR  = os.path.join(BASE_DIR, "output_images")
 TARGET_SIZE = (1005, 1317)     # width, height
 CORNER_RADIUS = 80
 ADD_BORDER    = False
@@ -13,13 +16,13 @@ BORDER_WIDTH  = 2
 BORDER_COLOR  = (0, 0, 0, 255)
 
 # File handling after conversion
-# If MOVE_TO_BACKUP is True, originals go to BACKUP_DIR.
-# Otherwise, originals are deleted.
+# If MOVE_TO_BACKUP is True, originals go to BACKUP_DIR. Otherwise they are deleted.
 MOVE_TO_BACKUP = False
-BACKUP_DIR     = "originals_backup"
+BACKUP_DIR     = os.path.join(BASE_DIR, "originals_backup")
 
 VALID_EXTS = (".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff")
 
+# Ensure folders exist (created beside the script/exe)
 os.makedirs(INPUT_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 if MOVE_TO_BACKUP:
@@ -64,10 +67,9 @@ def convert_one(src_path):
         img.save(out_path, "PNG")
         print(f"✅ Converted: {os.path.basename(src_path)} -> {os.path.basename(out_path)}")
 
-        # --- remove or move the original ---
+        # remove or move the original
         if MOVE_TO_BACKUP:
             dest = os.path.join(BACKUP_DIR, os.path.basename(src_path))
-            # If a file with same name exists in backup, append a timestamp
             if os.path.exists(dest):
                 stem, ext = os.path.splitext(dest)
                 dest = f"{stem}_{int(time.time())}{ext}"
